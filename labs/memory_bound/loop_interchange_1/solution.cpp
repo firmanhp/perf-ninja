@@ -1,4 +1,3 @@
-
 #include "solution.h"
 #include <memory>
 #include <string_view>
@@ -22,6 +21,20 @@ void identity(Matrix &result) {
   }
 }
 
+#ifdef SOLUTION
+// Multiply two square matrices
+void multiply(Matrix &result, const Matrix &a, const Matrix &b) {
+  zero(result);
+
+  for (int i = 0; i < N; i++) {
+    for (int k = 0; k < N; k++) {
+      for (int j = 0; j < N; j++) {
+        result[i][j] += a[i][k] * b[k][j];
+      }
+    }
+  }
+}
+#else
 // Multiply two square matrices
 void multiply(Matrix &result, const Matrix &a, const Matrix &b) {
   zero(result);
@@ -34,6 +47,7 @@ void multiply(Matrix &result, const Matrix &a, const Matrix &b) {
     }
   }
 }
+#endif
 
 // Compute integer power of a given square matrix
 Matrix power(const Matrix &input, const uint32_t k) {
