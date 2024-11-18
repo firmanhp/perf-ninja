@@ -4,6 +4,9 @@
 #include <fstream>
 #include <ios>
 
+namespace {
+
+#ifndef SOLUTION
 // Applies Gaussian blur in independent vertical lines
 static void filterVertically(uint8_t *output, const uint8_t *input,
                              const int width, const int height,
@@ -60,12 +63,90 @@ static void filterVertically(uint8_t *output, const uint8_t *input,
     }
   }
 }
+#endif
+
+#ifdef SOLUTION
+void filterVertically(uint8_t *output, const uint8_t *input,
+                             const int width, const int height,
+                             const int *kernel, const int radius,
+                             const int shift) {
+  const int rounding = 1 << (shift - 1);
+  std::vector<int> dot(width, 0);
+  std::vector<int> sum(width, 0);
+
+  // Top part of line, partial kernel
+  for (int row = 0; row < std::min(radius, height); ++row) {
+    // assume the whole row is vector
+    std::fill(dot.begin(), dot.end(), 0);
+    std::fill(sum.begin(), sum.end(), 0);
+    // calculate here
+    auto kp = &kernel[radius - row];
+    for (int c_row=0; c_row <= std::min(row + radius, height - 1) ; ++c_row) {
+      for (int c_col=0; c_col < width; ++c_col) {
+        dot[c_col] += input[c_row * width + c_col] * kp[c_row];
+        sum[c_col] += kp[c_row];
+      }
+    }
+
+    // set data here
+    for (int col = 0; col < width; ++col) {
+      int value = static_cast<int>(dot[col] / static_cast<float>(sum[col]) + 0.5f);
+      output[row * width + col] = static_cast<uint8_t>(value);
+    }
+  }
+
+  // Middle part of computations with full kernel
+  for (int row = radius; row < height - radius; ++row) {
+    // assume the whole row is vector
+    std::fill(dot.begin(), dot.end(), 0);
+
+    // calculate here
+    auto kp = kernel;
+    for (int c_row=row - radius; c_row <= row + radius; ++c_row) {
+      const int weight = *kp++;
+      for (int c_col=0; c_col < width; ++c_col) {
+        dot[c_col] += input[c_row * width + c_col] * weight;
+      }
+    }
+
+    // set data here
+    for (int col = 0; col < width; ++col) {
+      // Fast shift instead of division
+      const int value = (dot[col] + rounding) >> shift;
+      output[row * width + col] = static_cast<uint8_t>(value);
+    }
+  }
+
+  // Bottom part of line, partial kernel
+  for (int row = std::max(radius, height - radius); row < height; row++) {
+    // assume the whole row is vector
+    std::fill(dot.begin(), dot.end(), 0);
+    std::fill(sum.begin(), sum.end(), 0);
+    
+    // calculate here
+    auto kp = kernel;
+    for (int c_row=row - radius; c_row < height ; ++c_row) {
+      const int weight = *kp++;
+      for (int c_col=0; c_col < width; ++c_col) {
+        dot[c_col] += input[c_row * width + c_col] * weight;
+        sum[c_col] += weight;
+      }
+    }
+
+    // set data here
+    for (int col = 0; col < width; ++col) {
+      const int value = static_cast<int>(dot[col] / static_cast<float>(sum[col]) + 0.5f);
+      output[row * width + col] = static_cast<uint8_t>(value);
+    }
+  }
+}
+#endif
 
 // Applies Gaussian blur in independent horizontal lines
-static void filterHorizontally(uint8_t *output, const uint8_t *input,
-                               const int width, const int height,
-                               const int *kernel, const int radius,
-                               const int shift) {
+void filterHorizontally(uint8_t *output, const uint8_t *input,
+                        const int width, const int height,
+                        const int *kernel, const int radius,
+                        const int shift) {
   const int rounding = 1 << (shift - 1);
 
   for (int r = 0; r < height; r++) {
@@ -116,6 +197,8 @@ static void filterHorizontally(uint8_t *output, const uint8_t *input,
       output[r * width + c] = static_cast<uint8_t>(value);
     }
   }
+}
+
 }
 
 // Applies Gaussian blur to a grayscale image
