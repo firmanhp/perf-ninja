@@ -4,15 +4,25 @@
 #include <omp.h>
 #include <vector>
 
-std::size_t solution(const std::vector<uint32_t> &data, int thread_count) {
-  // Using std::atomic counters to disallow compiler to promote `target`
-  // memory location into a register. This way we ensure that the store
-  // to `target` stays inside the loop.
-  struct Accumulator {
-    std::atomic<uint32_t> value = 0;
-  };
-  std::vector<Accumulator> accumulators(thread_count);
+namespace {
 
+// Using std::atomic counters to disallow compiler to promote `target`
+// memory location into a register. This way we ensure that the store
+// to `target` stays inside the loop.
+#ifdef SOLUTION
+struct alignas(128) Accumulator {
+  std::atomic<uint32_t> value = 0;
+};
+#else
+struct Accumulator {
+  std::atomic<uint32_t> value = 0;
+};
+#endif
+
+}
+
+std::size_t solution(const std::vector<uint32_t> &data, int thread_count) {
+  std::vector<Accumulator> accumulators(thread_count);
 #pragma omp parallel num_threads(thread_count) default(none)                   \
     shared(accumulators, data)
   {
