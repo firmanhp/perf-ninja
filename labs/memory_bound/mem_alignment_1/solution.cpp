@@ -9,7 +9,15 @@
 // In other words, it defines how many elements are in each row.
 // hint: you need to allocate dummy columns to achieve proper data alignment.
 int n_columns(int N) {  
-  return N;
+  #ifdef SOLUTION
+    const int total_bytes = N * sizeof(float);
+    const int alignment = 32;
+    const int rem = total_bytes % alignment;
+    const int aligned_bytes = ((total_bytes / alignment) + (rem ? 1 : 0)) * alignment;
+    return aligned_bytes / sizeof(float);
+  #else
+    return N;
+  #endif
 }
 // ******************************************
 
